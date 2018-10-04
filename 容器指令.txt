@@ -96,8 +96,3 @@ bazel run -c opt tensorflow/contrib/lite/toco:toco -- \
   --std_value=127.5 \
   --mean_value=127.5
 
----------------------
-
-本文来自 GeekLee95 的CSDN 博客 ，全文地址请点击：https://blog.csdn.net/u011092156/article/details/80642133?utm_source=copy 
-
-bazel build /home/kyz/tensorflow/tensorflow/tensorflow/contrib/lite/toco:toco
