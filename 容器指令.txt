@@ -1,0 +1,103 @@
+docker run -it -d --rm --name pytorch -v /home/qiyafei/pytorch:/mnt/home --privileged=true --device /dev/nvidia-uvm:/dev/nvidia-uvm --device /dev/nvidia0:/dev/nvidia0 --device /dev/nvidiactl:/dev/nvidiactl kyz_v5 bash
+
+
+
+
+docker run -it --name MKV -v /home/:/mnt/home --privileged=true --device /dev/nvidia-uvm:/dev/nvidia-uvm --device /dev/nvidia0:/dev/nvidia0 --device /dev/nvidiactl:/dev/nvidiactl nvidia/cuda:8.0-cudnn6-runtime-ubuntu16.04
+
+
+Æô¶¯rancher
+docker run --restart=unless-stopped --name=rancher -dit -p 8080:8080 rancher/server
+cudaÈÝÆ÷
+docker run --runtime=nvidia --rm nvidia/cuda nvidia-smi
+
+pip3 install -i  https://pypi.tuna.tsinghua.edu.cn/simple opencv-contrib-python
+
+
+pip3 install -i  https://pypi.tuna.tsinghua.edu.cn/simple tensorflow
+
+pip install opencv-contrib-python
+
+cuda °æ±¾ 
+cat /usr/local/cuda/version.txt
+
+cudnn °æ±¾ 
+cat /usr/local/cuda/include/cudnn.h | grep CUDNN_MAJOR -A 2
+
+²éÑ¯°ü
+dpkg -l |grep -i
+ docker run -d --name=rs --restart=always -p 8080:8080 rancher/server
+
+sudo docker run -e CATTLE_AGENT_IP="139.159.243.146"  --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/rancher:/var/lib/rancher rancher/agent:v1.2.11 http://139.159.243.146:8080/v1/scripts/B5588E01801E92AD5C18:1514678400000:eT2usvOudV5CW5afaUMuIt8ms
+
+python export_inference_graph.py \
+    --alsologtostderr \
+    --model_name=inception_v3 \
+    --image_size=299 \
+    --output_file=mobilenet_v1_224.pb
+
+
+python eval_image_classifier.py \
+    --alsologtostderr \
+    --checkpoint_path=/home/kyz/tensorflow/20181002/weights/model.ckpt-202428 \
+    --dataset_name=vegtables \
+    --dataset_split_name=validation \
+    --dataset_dir=/home/kyz/tensorflow/20181002/classf/validation \
+    --model_name=mobilenet_v1
+
+python export_inference_graph.py \
+    --alsologtostderr \
+    --model_name=mobilenet_v1 \
+    --image_size=224 \
+    --dataset_name=vegtables \
+    --output_file=mobilenet_v1_224.pb
+
+freeze_graph \
+  --input_graph=/home/kyz/tensorflow/20181002/mobilenet_v1_224.pb \
+  --input_checkpoint=/home/kyz/tensorflow/20181002/weights/model.ckpt-202428 \
+  --input_binary=true \
+  --output_graph=/home/kyz/tensorflow/20181002/weights/1_frozen.pb \
+  --output_node_names=MobilenetV1/Predictions/Reshape_1
+
+
+bazel-bin/tensorflow/python/tools/freeze_graph \ 
+  --input_graph=/home/kyz/tensorflow/20181002/mobilenet_v1_224.pb \
+  --input_checkpoint=/home/kyz/tensorflow/20181002/weights/model.ckpt-202428 \
+  --input_binary=true \
+  --output_graph=/home/kyz/tensorflow/20181002/weights/1_frozen.pb \
+  --output_node_names=InceptionV3/Predictions/Reshape_1
+
+bazel-bin/tensorflow/python/tools/freeze_graph --input_graph=/home/kyz/tensorflow/20181002/mobilenet_v1_224.pb --input_checkpoint=/home/kyz/tensorflow/20181002/weights/model.ckpt-202428 --input_binary=true --output_graph=/home/kyz/tensorflow/20181002/weights/1_frozen.pb --output_node_names=/home/kyz/tensorflow/20181002/weights/Reshape_1
+
+
+bazel run -c opt tensorflow/contrib/lite/toco:toco -- \
+  --input_file=/home/kyz/tensorflow/20181002/weights/1_frozen.pb \
+  --output_file=/home/kyz/tensorflow/20181002/weights/7_float.tflite \
+  --inference_type=FLOAT \
+  --input_shape=1,224,224,3 \
+  --input_array=input \
+  --output_array=MobilenetV1/Predictions/Reshape_1
+
+
+
+
+
+ bazel run -c opt tensorflow/contrib/lite/toco:toco -- \
+  --input_file=/home/kyz/tensorflow/20181002/weights/1_frozen.pb \
+  --output_file=/home/kyz/tensorflow/20181002/weights/77.tflite \
+  --input_format=TENSORFLOW_GRAPHDEF \
+  --output_format=TFLITE \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_shape=1,224,224,3 \
+  --input_array=input \
+  --output_array=MobilenetV1/Predictions/Reshape_1 \
+  --default_ranges_min=0 \
+  --default_ranges_max=6 \
+  --std_value=127.5 \
+  --mean_value=127.5
+
+---------------------
+
+本文来自 GeekLee95 的CSDN 博客 ，全文地址请点击：https://blog.csdn.net/u011092156/article/details/80642133?utm_source=copy 
+
+bazel build /home/kyz/tensorflow/tensorflow/tensorflow/contrib/lite/toco:toco
